@@ -1,0 +1,61 @@
+version: '3.4'
+services:
+  bitcoin:
+    build:
+      context: ./bitcoin-app/
+      dockerfile: Dockerfile-bitcoin
+    container_name: bitcoin-server
+    image: bitcoin:latest
+    ports:
+      - "8333:8333"
+      - "8332:8332"
+    networks:
+      - overlay
+    volumes:
+      - type: volume
+        source: bitcoin-node-volume
+        target: /bitcoinsv
+  planaria:
+    build:
+      context: ./planaria-app/
+      dockerfile: Dockerfile-planaria
+    container_name: planaria-server
+    image: planaria:latest
+    ports:
+      - "28332:28332"
+      - "28339:28339"
+      - "28337:28337"
+      - "27017:27017"
+    networks:
+      - overlay
+    depends_on:
+      - bitcoin
+    volumes:
+      - type: volume
+        source: planaria-volume
+        target: /planaria
+  planarium:
+    build:
+      context: ./planarium-app/
+      dockerfile: Dockerfile-planarium
+    container_name: planarium-server
+    image: planarium:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - overlay
+    depends_on:
+      - bitcoin
+      - planaria
+    volumes:
+      - type: volume
+        source: planarium-volume
+        target: /app
+
+volumes:
+  bitcoin-node-volume:
+  planaria-volume:
+  planarium-volume:
+
+networks:
+  overlay:
