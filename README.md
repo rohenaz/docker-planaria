@@ -27,6 +27,11 @@ _Login to docker_
 $ docker login
 ```
 
+_Configure Docker Defaults_
+```
+1) Minimum of 200 gb storage
+```
+
 ### Install Bitcoin SV Node
 
 _(Optional) Start with this repository as an example project_
