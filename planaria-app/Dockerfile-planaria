@@ -25,4 +25,5 @@ EXPOSE 28332
 EXPOSE 28339
 EXPOSE 28337
 
+RUN chmod +x /planaria/entrypoint.sh
 ENTRYPOINT ["/planaria/entrypoint.sh"]

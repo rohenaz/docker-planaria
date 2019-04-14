@@ -5,4 +5,5 @@ COPY . /app
 RUN rm -rf node_modules && npm install
 EXPOSE 3000
 #CMD ["node", "index.js"]
+RUN chmod +x /app/entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]

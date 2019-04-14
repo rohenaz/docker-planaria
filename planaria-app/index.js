@@ -7,6 +7,7 @@ console.log("####################\n\n")
 const fs = require('fs')
 const path = require('path');
 const dotenv = require('dotenv')
+const mkdir = require('make-dir')
 dotenv.config({path: path.resolve(process.cwd(), 'planaria.env')})
 console.log("####################")
 console.log("# ENV...")
@@ -19,6 +20,8 @@ try {
     console.log("# Overriding", k, ":", override[k])
   }
 } catch (e) { }
+console.log("# Final Planaria ENV:")
+console.log("#", JSON.stringify(process.env, null, 2))
 console.log("####################")
 
 // Filter the folders in the current directory that has:
@@ -80,6 +83,15 @@ const daemon = {
       // only trigger if the clock is larger than "from"
       if (clk > gene.from) {
         await util.rewind(gene, clk)
+      } else if (clk === gene.from-1) {
+        if (gene.oncreate) {
+          console.log("$ running oncreate = ", gene.oncreate, gene.address)
+          await mkdir('/fs/' + gene.address)
+          await mkdir('./public/assets/' + gene.address)
+          await gene.oncreate({
+            fs: { path: '/fs/' + gene.address }
+          })
+        }
       }
     }
 
@@ -191,8 +203,12 @@ const util = {
             }
           },
         },
+        env: process.env,
         assets: {
           path: './public/assets/' + gene.address
+        },
+        fs: {
+          path: '/fs/' + gene.address
         }
       }
       await gene.onrestart(MACHINE)
