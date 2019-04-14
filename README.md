@@ -1,4 +1,4 @@
-# Planaria & Bitcoin Docker Environment
+# Planaria & Bitcoin Docker Environment [WIP] [Alpha]
 Optimized [docker](https://docs.docker.com) image of the Bitcoin SV node, [Planaria](https://docs.planaria.network) and [Planarium](https://docs.planaria.network)
 
 ## Table of Contents
