@@ -3,5 +3,9 @@ steps:
 - name: 'docker/compose:1.19.0'
   args: ['up', '-d']
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['tag', 'planarium:latest', 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA/planarium-app']
+  args: ['tag', 'planarium:latest', 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['tag', 'planaria:latest', 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['tag', 'bitcoin:latest', 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA']
 images: ['gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA']
