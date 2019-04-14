@@ -25,7 +25,7 @@ try {
     console.log("# Overriding", k, ":", override[k])
   }
 } catch (e) { }
-console.log("# Final ENV:")
+console.log("# Final Planarium ENV:")
 console.log("#", JSON.stringify(process.env, null, 2))
 console.log("####################")
 
@@ -162,7 +162,7 @@ var init = async function(routes) {
     kv.get("genes", function(err, val) {
       if (err) console.log(err)
       meta.info.genes = val
-      if (process.env.JOIN) {
+      if (process.env.JOIN === 'true') {
         join()
       }
     })
@@ -176,13 +176,24 @@ var init = async function(routes) {
   for (let i=0; i<addresses.length; i++) {
     let address = addresses[i]
     let gene = GENES[address]
-    let db = await bitquery.init({
-      url: "mongodb://" + (process.env.HOST ? process.env.HOST : ip.address()) + ":" + PLANA_CONFIG.mongo.port,
-      address: gene.planaria.address,
-      sort: gene.planarium.query.api.sort,
-      transform:  gene.planarium.transform,
-      timeout: gene.planarium.query.api.timeout
-    }).catch(function(e) {
+
+    // build options
+    let options = {
+      url: "mongodb://" + (process.env.HOST ? process.env.HOST : ip.address()) + ":" + PLANA_CONFIG.mongo.port
+    }
+    if (process.env.MONGO) options.url = process.env.MONGO
+    if (process.env.MONGO_HOST && process.env.MONGO_PORT) options.url = "mongodb://" + process.env.MONGO_HOST + ":" + process.env.MONGO_PORT
+    if (gene.planaria.address) options.address = gene.planaria.address
+    if (gene.planarium.query && gene.planarium.query.api) {
+      let api = gene.planarium.query.api
+      if (api.sort) options.sort = api.sort
+      if (api.limit) options.limit = api.limit
+      if (api.timeout) options.timeout = api.timeout
+    }
+    if (gene.planarium.transform) options.transform = gene.planarium.transform
+
+    // bitquery init
+    let db = await bitquery.init(options).catch(function(e) {
       console.log("Error", e)
     })
     Manager[gene.planaria.address] = {
@@ -191,18 +202,39 @@ var init = async function(routes) {
     console.log("# Bitquery Initialized...")
     topics[gene.planaria.address] = gene.planarium.socket.topics
     transforms[gene.planaria.address] = gene.planarium.transform
+
+    // oncreate
+    if (gene.planarium.query && gene.planarium.query.api && gene.planarium.query.api.oncreate) {
+      let oncreate = gene.planarium.query.api.oncreate
+      console.log("planarium oncreate exists", oncreate)
+      let fpath = "/fs/" + address
+      console.log("fs path = ", fpath)
+      await oncreate({ fs: { path: fpath } })
+    } else {
+      console.log("oncreate doesn't exist")
+    }
   }
   console.log("# Bitsocket init", topics)
+  let mongo_config = {}
+  if (process.env.MONGO_HOST) {
+    mongo_config.host = process.env.MONGO_HOST
+  } else if (process.env.HOST) {
+    mongo_config.host = process.env.HOST
+  } else {
+    mongo_config.host = ip.address()
+  }
+  if (process.env.MONGO_PORT) {
+    mongo_config.port = process.env.MONGO_PORT
+  } else {
+    mongo_config.port = PLANA_CONFIG.mongo.port
+  }
   sock = await bitsocket.init({
     bit: {
       zmq: {
         host: "planaria",
         port: PLANA_CONFIG.zmq.port
       },
-      mongo: {
-        host: (process.env.HOST ? process.env.HOST : ip.address()),
-        port: PLANA_CONFIG.mongo.port
-      },
+      mongo: mongo_config
     },
     topics: topics,
     transform: transforms,
@@ -395,6 +427,19 @@ var init = async function(routes) {
       app.get(path, handler)
     })
   }
+  Object.keys(GENES).forEach(function(addr) {
+    let gene = GENES[addr].planarium
+    if(gene.query && gene.query.api && gene.query.api.routes) {
+      console.log("# Custom routes for", addr, "\n", gene.query.api.routes)
+      Object.keys(gene.query.api.routes).forEach(function(path) {
+        let resolvedPath = "/" + addr + path
+        let handler = gene.query.api.routes[path]
+        console.log("resolved path = ", resolvedPath)
+        console.log("handler = ", handler)
+        app.get(resolvedPath, handler)
+      })
+    }
+  })
 
 
   app.listen(DEFAULT_WEB_PORT, () => {
